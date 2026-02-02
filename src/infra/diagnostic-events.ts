@@ -115,6 +115,16 @@ export type DiagnosticRunAttemptEvent = DiagnosticBaseEvent & {
   attempt: number;
 };
 
+export type DiagnosticRunRecoveryEvent = DiagnosticBaseEvent & {
+  type: "run.recovery";
+  sessionKey?: string;
+  sessionId?: string;
+  runId?: string;
+  recoveryKind: "context_overflow" | "compaction_failure";
+  resetSucceeded: boolean;
+  error?: string;
+};
+
 export type DiagnosticHeartbeatEvent = DiagnosticBaseEvent & {
   type: "diagnostic.heartbeat";
   webhooks: {
@@ -139,12 +149,13 @@ export type DiagnosticEventPayload =
   | DiagnosticLaneEnqueueEvent
   | DiagnosticLaneDequeueEvent
   | DiagnosticRunAttemptEvent
+  | DiagnosticRunRecoveryEvent
   | DiagnosticHeartbeatEvent;
 
 export type DiagnosticEventInput = DiagnosticEventPayload extends infer Event
   ? Event extends DiagnosticEventPayload
-    ? Omit<Event, "seq" | "ts">
-    : never
+  ? Omit<Event, "seq" | "ts">
+  : never
   : never;
 let seq = 0;
 const listeners = new Set<(evt: DiagnosticEventPayload) => void>();

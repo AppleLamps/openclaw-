@@ -21,6 +21,10 @@ export type SessionStatus = {
   model: string | null;
   contextTokens: number | null;
   flags: string[];
+  lastRecoveryAt?: number;
+  lastRecoveryKind?: "context_overflow" | "compaction_failure";
+  lastRecoveryReason?: string;
+  lastRecoveryResetSucceeded?: boolean;
 };
 
 export type HeartbeatStatus = {
@@ -43,6 +47,14 @@ export type StatusSummary = {
   };
   channelSummary: string[];
   queuedSystemEvents: string[];
+  recovery?: {
+    kind: "context_overflow" | "compaction_failure";
+    at: number;
+    sessionKey?: string;
+    sessionId?: string;
+    resetSucceeded: boolean;
+    reason?: string;
+  };
   sessions: {
     paths: string[];
     count: number;

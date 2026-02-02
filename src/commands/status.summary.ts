@@ -152,6 +152,10 @@ export async function getStatusSummary(): Promise<StatusSummary> {
           model,
           contextTokens,
           flags: buildFlags(entry),
+          lastRecoveryAt: entry?.lastRecoveryAt,
+          lastRecoveryKind: entry?.lastRecoveryKind,
+          lastRecoveryReason: entry?.lastRecoveryReason,
+          lastRecoveryResetSucceeded: entry?.lastRecoveryResetSucceeded,
         } satisfies SessionStatus;
       })
       .sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
@@ -175,15 +179,28 @@ export async function getStatusSummary(): Promise<StatusSummary> {
     .toSorted((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
   const recent = allSessions.slice(0, 10);
   const totalSessions = allSessions.length;
+  const recoveryCandidate = allSessions
+    .filter((session) => session.lastRecoveryAt && session.lastRecoveryKind)
+    .toSorted((a, b) => (b.lastRecoveryAt ?? 0) - (a.lastRecoveryAt ?? 0))[0];
+  const recovery = recoveryCandidate?.lastRecoveryAt && recoveryCandidate.lastRecoveryKind
+    ? {
+      kind: recoveryCandidate.lastRecoveryKind,
+      at: recoveryCandidate.lastRecoveryAt,
+      sessionKey: recoveryCandidate.key,
+      sessionId: recoveryCandidate.sessionId,
+      resetSucceeded: recoveryCandidate.lastRecoveryResetSucceeded ?? true,
+      reason: recoveryCandidate.lastRecoveryReason,
+    }
+    : undefined;
 
   return {
     linkChannel: linkContext
       ? {
-          id: linkContext.plugin.id,
-          label: linkContext.plugin.meta.label ?? "Channel",
-          linked: linkContext.linked,
-          authAgeMs: linkContext.authAgeMs,
-        }
+        id: linkContext.plugin.id,
+        label: linkContext.plugin.meta.label ?? "Channel",
+        linked: linkContext.linked,
+        authAgeMs: linkContext.authAgeMs,
+      }
       : undefined,
     heartbeat: {
       defaultAgentId: agentList.defaultId,
@@ -191,6 +208,7 @@ export async function getStatusSummary(): Promise<StatusSummary> {
     },
     channelSummary,
     queuedSystemEvents,
+    recovery,
     sessions: {
       paths: Array.from(paths),
       count: totalSessions,

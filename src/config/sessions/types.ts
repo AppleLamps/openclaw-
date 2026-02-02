@@ -57,13 +57,13 @@ export type SessionEntry = {
   groupActivationNeedsSystemIntro?: boolean;
   sendPolicy?: "allow" | "deny";
   queueMode?:
-    | "steer"
-    | "followup"
-    | "collect"
-    | "steer-backlog"
-    | "steer+backlog"
-    | "queue"
-    | "interrupt";
+  | "steer"
+  | "followup"
+  | "collect"
+  | "steer-backlog"
+  | "steer+backlog"
+  | "queue"
+  | "interrupt";
   queueDebounceMs?: number;
   queueCap?: number;
   queueDrop?: "old" | "new" | "summarize";
@@ -76,6 +76,10 @@ export type SessionEntry = {
   compactionCount?: number;
   memoryFlushAt?: number;
   memoryFlushCompactionCount?: number;
+  lastRecoveryAt?: number;
+  lastRecoveryKind?: "context_overflow" | "compaction_failure";
+  lastRecoveryReason?: string;
+  lastRecoveryResetSucceeded?: boolean;
   cliSessionIds?: Record<string, string>;
   claudeCliSessionId?: string;
   label?: string;

@@ -68,8 +68,7 @@ export function logWebhookReceived(params: {
   webhookStats.received += 1;
   webhookStats.lastReceived = Date.now();
   diag.debug(
-    `webhook received: channel=${params.channel} type=${params.updateType ?? "unknown"} chatId=${
-      params.chatId ?? "unknown"
+    `webhook received: channel=${params.channel} type=${params.updateType ?? "unknown"} chatId=${params.chatId ?? "unknown"
     } total=${webhookStats.received}`,
   );
   emitDiagnosticEvent({
@@ -89,10 +88,8 @@ export function logWebhookProcessed(params: {
 }) {
   webhookStats.processed += 1;
   diag.debug(
-    `webhook processed: channel=${params.channel} type=${
-      params.updateType ?? "unknown"
-    } chatId=${params.chatId ?? "unknown"} duration=${params.durationMs ?? 0}ms processed=${
-      webhookStats.processed
+    `webhook processed: channel=${params.channel} type=${params.updateType ?? "unknown"
+    } chatId=${params.chatId ?? "unknown"} duration=${params.durationMs ?? 0}ms processed=${webhookStats.processed
     }`,
   );
   emitDiagnosticEvent({
@@ -113,8 +110,7 @@ export function logWebhookError(params: {
 }) {
   webhookStats.errors += 1;
   diag.error(
-    `webhook error: channel=${params.channel} type=${params.updateType ?? "unknown"} chatId=${
-      params.chatId ?? "unknown"
+    `webhook error: channel=${params.channel} type=${params.updateType ?? "unknown"} chatId=${params.chatId ?? "unknown"
     } error="${params.error}" errors=${webhookStats.errors}`,
   );
   emitDiagnosticEvent({
@@ -137,8 +133,7 @@ export function logMessageQueued(params: {
   state.queueDepth += 1;
   state.lastActivity = Date.now();
   diag.debug(
-    `message queued: sessionId=${state.sessionId ?? "unknown"} sessionKey=${
-      state.sessionKey ?? "unknown"
+    `message queued: sessionId=${state.sessionId ?? "unknown"} sessionKey=${state.sessionKey ?? "unknown"
     } source=${params.source} queueDepth=${state.queueDepth} sessionState=${state.state}`,
   );
   emitDiagnosticEvent({
@@ -163,15 +158,11 @@ export function logMessageProcessed(params: {
   reason?: string;
   error?: string;
 }) {
-  const payload = `message processed: channel=${params.channel} chatId=${
-    params.chatId ?? "unknown"
-  } messageId=${params.messageId ?? "unknown"} sessionId=${
-    params.sessionId ?? "unknown"
-  } sessionKey=${params.sessionKey ?? "unknown"} outcome=${params.outcome} duration=${
-    params.durationMs ?? 0
-  }ms${params.reason ? ` reason=${params.reason}` : ""}${
-    params.error ? ` error="${params.error}"` : ""
-  }`;
+  const payload = `message processed: channel=${params.channel} chatId=${params.chatId ?? "unknown"
+    } messageId=${params.messageId ?? "unknown"} sessionId=${params.sessionId ?? "unknown"
+    } sessionKey=${params.sessionKey ?? "unknown"} outcome=${params.outcome} duration=${params.durationMs ?? 0
+    }ms${params.reason ? ` reason=${params.reason}` : ""}${params.error ? ` error="${params.error}"` : ""
+    }`;
   if (params.outcome === "error") {
     diag.error(payload);
   } else if (params.outcome === "skipped") {
@@ -210,10 +201,8 @@ export function logSessionStateChange(
   }
   if (!isProbeSession) {
     diag.debug(
-      `session state: sessionId=${state.sessionId ?? "unknown"} sessionKey=${
-        state.sessionKey ?? "unknown"
-      } prev=${prevState} new=${params.state} reason="${params.reason ?? ""}" queueDepth=${
-        state.queueDepth
+      `session state: sessionId=${state.sessionId ?? "unknown"} sessionKey=${state.sessionKey ?? "unknown"
+      } prev=${prevState} new=${params.state} reason="${params.reason ?? ""}" queueDepth=${state.queueDepth
       }`,
     );
   }
@@ -232,8 +221,7 @@ export function logSessionStateChange(
 export function logSessionStuck(params: SessionRef & { state: SessionStateValue; ageMs: number }) {
   const state = getSessionState(params);
   diag.warn(
-    `stuck session: sessionId=${state.sessionId ?? "unknown"} sessionKey=${
-      state.sessionKey ?? "unknown"
+    `stuck session: sessionId=${state.sessionId ?? "unknown"} sessionKey=${state.sessionKey ?? "unknown"
     } state=${params.state} age=${Math.round(params.ageMs / 1000)}s queueDepth=${state.queueDepth}`,
   );
   emitDiagnosticEvent({
@@ -270,8 +258,7 @@ export function logLaneDequeue(lane: string, waitMs: number, queueSize: number) 
 
 export function logRunAttempt(params: SessionRef & { runId: string; attempt: number }) {
   diag.debug(
-    `run attempt: sessionId=${params.sessionId ?? "unknown"} sessionKey=${
-      params.sessionKey ?? "unknown"
+    `run attempt: sessionId=${params.sessionId ?? "unknown"} sessionKey=${params.sessionKey ?? "unknown"
     } runId=${params.runId} attempt=${params.attempt}`,
   );
   emitDiagnosticEvent({
@@ -280,6 +267,32 @@ export function logRunAttempt(params: SessionRef & { runId: string; attempt: num
     sessionKey: params.sessionKey,
     runId: params.runId,
     attempt: params.attempt,
+  });
+  markActivity();
+}
+
+export function logRunRecovery(
+  params: SessionRef & {
+    runId?: string;
+    recoveryKind: "context_overflow" | "compaction_failure";
+    resetSucceeded: boolean;
+    error?: string;
+  },
+) {
+  const outcome = params.resetSucceeded ? "reset ok" : "reset failed";
+  const errorLabel = params.error ? ` error="${params.error}"` : "";
+  diag.warn(
+    `run recovery: kind=${params.recoveryKind} ${outcome} sessionId=${params.sessionId ?? "unknown"
+    } sessionKey=${params.sessionKey ?? "unknown"} runId=${params.runId ?? "unknown"}${errorLabel}`,
+  );
+  emitDiagnosticEvent({
+    type: "run.recovery",
+    sessionId: params.sessionId,
+    sessionKey: params.sessionKey,
+    runId: params.runId,
+    recoveryKind: params.recoveryKind,
+    resetSucceeded: params.resetSucceeded,
+    error: params.error,
   });
   markActivity();
 }

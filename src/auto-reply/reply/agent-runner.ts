@@ -142,20 +142,20 @@ export async function runReplyAgent(params: {
   const blockReplyCoalescing =
     blockStreamingEnabled && opts?.onBlockReply
       ? resolveBlockStreamingCoalescing(
-          cfg,
-          sessionCtx.Provider,
-          sessionCtx.AccountId,
-          blockReplyChunking,
-        )
+        cfg,
+        sessionCtx.Provider,
+        sessionCtx.AccountId,
+        blockReplyChunking,
+      )
       : undefined;
   const blockReplyPipeline =
     blockStreamingEnabled && opts?.onBlockReply
       ? createBlockReplyPipeline({
-          onBlockReply: opts.onBlockReply,
-          timeoutMs: blockReplyTimeoutMs,
-          coalescing: blockReplyCoalescing,
-          buffer: createAudioAsVoiceBuffer({ isAudioPayload }),
-        })
+        onBlockReply: opts.onBlockReply,
+        timeoutMs: blockReplyTimeoutMs,
+        coalescing: blockReplyCoalescing,
+        buffer: createAudioAsVoiceBuffer({ isAudioPayload }),
+      })
       : null;
 
   if (shouldSteer && isStreaming) {
@@ -230,11 +230,15 @@ export async function runReplyAgent(params: {
     failureLabel: string;
     buildLogMessage: (nextSessionId: string) => string;
     cleanupTranscripts?: boolean;
+    recoveryKind?: "context_overflow" | "compaction_failure";
+    recoveryReason?: string;
   };
   const resetSession = async ({
     failureLabel,
     buildLogMessage,
     cleanupTranscripts,
+    recoveryKind,
+    recoveryReason,
   }: SessionResetOptions): Promise<boolean> => {
     if (!sessionKey || !activeSessionStore || !storePath) {
       return false;
@@ -252,6 +256,13 @@ export async function runReplyAgent(params: {
       systemSent: false,
       abortedLastRun: false,
     };
+    if (recoveryKind) {
+      const trimmedReason = recoveryReason?.trim();
+      nextEntry.lastRecoveryAt = Date.now();
+      nextEntry.lastRecoveryKind = recoveryKind;
+      nextEntry.lastRecoveryReason = trimmedReason ? trimmedReason.slice(0, 200) : undefined;
+      nextEntry.lastRecoveryResetSucceeded = true;
+    }
     const agentId = resolveAgentIdFromSessionKey(sessionKey);
     const nextSessionFile = resolveSessionTranscriptPath(
       nextSessionId,
@@ -291,11 +302,17 @@ export async function runReplyAgent(params: {
     }
     return true;
   };
-  const resetSessionAfterCompactionFailure = async (reason: string): Promise<boolean> =>
+  const resetSessionAfterCompactionFailure = async (params: {
+    reason: string;
+    kind: "context_overflow" | "compaction_failure";
+  }): Promise<boolean> =>
     resetSession({
-      failureLabel: "compaction failure",
+      failureLabel: params.kind === "context_overflow" ? "context overflow" : "compaction failure",
       buildLogMessage: (nextSessionId) =>
-        `Auto-compaction failed (${reason}). Restarting session ${sessionKey} -> ${nextSessionId} and retrying.`,
+        `${params.kind === "context_overflow" ? "Context overflow" : "Auto-compaction failed"
+        } (${params.reason}). Restarting session ${sessionKey} -> ${nextSessionId} and retrying.`,
+      recoveryKind: params.kind,
+      recoveryReason: params.reason,
     });
   const resetSessionAfterRoleOrderingConflict = async (reason: string): Promise<boolean> =>
     resetSession({
@@ -472,10 +489,10 @@ export async function runReplyAgent(params: {
       const showCost = authMode === "api-key";
       const costConfig = showCost
         ? resolveModelCostConfig({
-            provider: providerUsed,
-            model: modelUsed,
-            config: cfg,
-          })
+          provider: providerUsed,
+          model: modelUsed,
+          config: cfg,
+        })
         : undefined;
       let formatted = formatResponseUsageLine({
         usage,

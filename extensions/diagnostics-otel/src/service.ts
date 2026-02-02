@@ -82,25 +82,25 @@ export function createDiagnosticsOtelService(): OpenClawPluginService {
       const logUrl = resolveOtelUrl(endpoint, "v1/logs");
       const traceExporter = tracesEnabled
         ? new OTLPTraceExporter({
-            ...(traceUrl ? { url: traceUrl } : {}),
-            ...(headers ? { headers } : {}),
-          })
+          ...(traceUrl ? { url: traceUrl } : {}),
+          ...(headers ? { headers } : {}),
+        })
         : undefined;
 
       const metricExporter = metricsEnabled
         ? new OTLPMetricExporter({
-            ...(metricUrl ? { url: metricUrl } : {}),
-            ...(headers ? { headers } : {}),
-          })
+          ...(metricUrl ? { url: metricUrl } : {}),
+          ...(headers ? { headers } : {}),
+        })
         : undefined;
 
       const metricReader = metricExporter
         ? new PeriodicExportingMetricReader({
-            exporter: metricExporter,
-            ...(typeof otel.flushIntervalMs === "number"
-              ? { exportIntervalMillis: Math.max(1000, otel.flushIntervalMs) }
-              : {}),
-          })
+          exporter: metricExporter,
+          ...(typeof otel.flushIntervalMs === "number"
+            ? { exportIntervalMillis: Math.max(1000, otel.flushIntervalMs) }
+            : {}),
+        })
         : undefined;
 
       if (tracesEnabled || metricsEnabled) {
@@ -110,10 +110,10 @@ export function createDiagnosticsOtelService(): OpenClawPluginService {
           ...(metricReader ? { metricReader } : {}),
           ...(sampleRate !== undefined
             ? {
-                sampler: new ParentBasedSampler({
-                  root: new TraceIdRatioBasedSampler(sampleRate),
-                }),
-              }
+              sampler: new ParentBasedSampler({
+                root: new TraceIdRatioBasedSampler(sampleRate),
+              }),
+            }
             : {}),
         });
 
@@ -204,6 +204,10 @@ export function createDiagnosticsOtelService(): OpenClawPluginService {
         unit: "1",
         description: "Run attempts",
       });
+      const runRecoveryCounter = meter.createCounter("openclaw.run.recovery", {
+        unit: "1",
+        description: "Run recovery events",
+      });
 
       if (logsEnabled) {
         const logExporter = new OTLPLogExporter({
@@ -231,18 +235,18 @@ export function createDiagnosticsOtelService(): OpenClawPluginService {
           };
           const meta = (logObj as Record<string, unknown>)._meta as
             | {
-                logLevelName?: string;
-                date?: Date;
-                name?: string;
-                parentNames?: string[];
-                path?: {
-                  filePath?: string;
-                  fileLine?: string;
-                  fileColumn?: string;
-                  filePathWithLine?: string;
-                  method?: string;
-                };
-              }
+              logLevelName?: string;
+              date?: Date;
+              name?: string;
+              parentNames?: string[];
+              path?: {
+                filePath?: string;
+                fileLine?: string;
+                fileColumn?: string;
+                filePathWithLine?: string;
+                method?: string;
+              };
+            }
             | undefined;
           const logLevelName = meta?.logLevelName ?? "INFO";
           const severityNumber = logSeverityMap[logLevelName] ?? (9 as SeverityNumber);
@@ -566,6 +570,15 @@ export function createDiagnosticsOtelService(): OpenClawPluginService {
         runAttemptCounter.add(1, { "openclaw.attempt": evt.attempt });
       };
 
+      const recordRunRecovery = (
+        evt: Extract<DiagnosticEventPayload, { type: "run.recovery" }>,
+      ) => {
+        runRecoveryCounter.add(1, {
+          "openclaw.recovery": evt.recoveryKind,
+          "openclaw.reset": evt.resetSucceeded ? "true" : "false",
+        });
+      };
+
       const recordHeartbeat = (
         evt: Extract<DiagnosticEventPayload, { type: "diagnostic.heartbeat" }>,
       ) => {
@@ -606,6 +619,9 @@ export function createDiagnosticsOtelService(): OpenClawPluginService {
             return;
           case "run.attempt":
             recordRunAttempt(evt);
+            return;
+          case "run.recovery":
+            recordRunRecovery(evt);
             return;
           case "diagnostic.heartbeat":
             recordHeartbeat(evt);

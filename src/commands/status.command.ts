@@ -97,28 +97,28 @@ export async function statusCommand(
 
   const usage = opts.usage
     ? await withProgress(
-        {
-          label: "Fetching usage snapshot…",
-          indeterminate: true,
-          enabled: opts.json !== true,
-        },
-        async () => await loadProviderUsageSummary({ timeoutMs: opts.timeoutMs }),
-      )
+      {
+        label: "Fetching usage snapshot…",
+        indeterminate: true,
+        enabled: opts.json !== true,
+      },
+      async () => await loadProviderUsageSummary({ timeoutMs: opts.timeoutMs }),
+    )
     : undefined;
   const health: HealthSummary | undefined = opts.deep
     ? await withProgress(
-        {
-          label: "Checking gateway health…",
-          indeterminate: true,
-          enabled: opts.json !== true,
-        },
-        async () =>
-          await callGateway<HealthSummary>({
-            method: "health",
-            params: { probe: true },
-            timeoutMs: opts.timeoutMs,
-          }),
-      )
+      {
+        label: "Checking gateway health…",
+        indeterminate: true,
+        enabled: opts.json !== true,
+      },
+      async () =>
+        await callGateway<HealthSummary>({
+          method: "health",
+          params: { probe: true },
+          timeoutMs: opts.timeoutMs,
+        }),
+    )
     : undefined;
 
   const configChannel = normalizeUpdateChannel(cfg.update?.channel);
@@ -180,6 +180,7 @@ export async function statusCommand(
     runtime.log("");
   }
 
+  const now = Date.now();
   const tableWidth = Math.max(60, (process.stdout.columns ?? 120) - 1);
 
   const dashboard = (() => {
@@ -212,13 +213,13 @@ export async function statusCommand(
     const self =
       gatewaySelf?.host || gatewaySelf?.version || gatewaySelf?.platform
         ? [
-            gatewaySelf?.host ? gatewaySelf.host : null,
-            gatewaySelf?.ip ? `(${gatewaySelf.ip})` : null,
-            gatewaySelf?.version ? `app ${gatewaySelf.version}` : null,
-            gatewaySelf?.platform ? gatewaySelf.platform : null,
-          ]
-            .filter(Boolean)
-            .join(" ")
+          gatewaySelf?.host ? gatewaySelf.host : null,
+          gatewaySelf?.ip ? `(${gatewaySelf.ip})` : null,
+          gatewaySelf?.version ? `app ${gatewaySelf.version}` : null,
+          gatewaySelf?.platform ? gatewaySelf.platform : null,
+        ]
+          .filter(Boolean)
+          .join(" ")
         : null;
     const suffix = self ? ` · ${self}` : "";
     return `${gatewayMode} · ${target} · ${reach}${auth}${suffix}`;
@@ -260,6 +261,20 @@ export async function statusCommand(
     : "";
   const eventsValue =
     summary.queuedSystemEvents.length > 0 ? `${summary.queuedSystemEvents.length} queued` : "none";
+
+  const recoveryValue = (() => {
+    const recovery = summary.recovery;
+    if (!recovery) {
+      return muted("none");
+    }
+    const kindLabel = recovery.kind === "context_overflow" ? "context overflow" : "compaction";
+    const outcome = recovery.resetSucceeded ? "reset ok" : "reset failed";
+    const ageLabel = formatAge(Math.max(0, now - recovery.at));
+    const sessionLabel = recovery.sessionKey
+      ? ` · ${shortenText(recovery.sessionKey, 18)}`
+      : "";
+    return `${kindLabel} · ${outcome} · ${ageLabel}${sessionLabel}`;
+  })();
 
   const probesValue = health ? ok("enabled") : muted("skipped (use --deep)");
 
@@ -332,17 +347,17 @@ export async function statusCommand(
   const gitLabel =
     update.installKind === "git"
       ? (() => {
-          const shortSha = update.git?.sha ? update.git.sha.slice(0, 8) : null;
-          const branch =
-            update.git?.branch && update.git.branch !== "HEAD" ? update.git.branch : null;
-          const tag = update.git?.tag ?? null;
-          const parts = [
-            branch ?? (tag ? "detached" : "git"),
-            tag ? `tag ${tag}` : null,
-            shortSha ? `@ ${shortSha}` : null,
-          ].filter(Boolean);
-          return parts.join(" · ");
-        })()
+        const shortSha = update.git?.sha ? update.git.sha.slice(0, 8) : null;
+        const branch =
+          update.git?.branch && update.git.branch !== "HEAD" ? update.git.branch : null;
+        const tag = update.git?.tag ?? null;
+        const parts = [
+          branch ?? (tag ? "detached" : "git"),
+          tag ? `tag ${tag}` : null,
+          shortSha ? `@ ${shortSha}` : null,
+        ].filter(Boolean);
+        return parts.join(" · ");
+      })()
       : null;
 
   const overviewRows = [
@@ -370,6 +385,7 @@ export async function statusCommand(
     { Item: "Memory", Value: memoryValue },
     { Item: "Probes", Value: probesValue },
     { Item: "Events", Value: eventsValue },
+    { Item: "Recovery", Value: recoveryValue },
     { Item: "Heartbeat", Value: heartbeatValue },
     {
       Item: "Sessions",
@@ -500,21 +516,21 @@ export async function statusCommand(
       rows:
         summary.sessions.recent.length > 0
           ? summary.sessions.recent.map((sess) => ({
-              Key: shortenText(sess.key, 32),
-              Kind: sess.kind,
-              Age: sess.updatedAt ? formatAge(sess.age) : "no activity",
-              Model: sess.model ?? "unknown",
-              Tokens: formatTokensCompact(sess),
-            }))
+            Key: shortenText(sess.key, 32),
+            Kind: sess.kind,
+            Age: sess.updatedAt ? formatAge(sess.age) : "no activity",
+            Model: sess.model ?? "unknown",
+            Tokens: formatTokensCompact(sess),
+          }))
           : [
-              {
-                Key: muted("no sessions yet"),
-                Kind: "",
-                Age: "",
-                Model: "",
-                Tokens: "",
-              },
-            ],
+            {
+              Key: muted("no sessions yet"),
+              Kind: "",
+              Age: "",
+              Model: "",
+              Tokens: "",
+            },
+          ],
     }).trimEnd(),
   );
 
