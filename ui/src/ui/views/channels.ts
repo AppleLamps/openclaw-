@@ -5,7 +5,6 @@ import type {
   ChannelsStatusSnapshot,
   DiscordStatus,
   GoogleChatStatus,
-  IMessageStatus,
   NostrProfile,
   NostrStatus,
   SignalStatus,
@@ -18,7 +17,6 @@ import { formatAgo } from "../format";
 import { renderChannelConfigSection } from "./channels.config";
 import { renderDiscordCard } from "./channels.discord";
 import { renderGoogleChatCard } from "./channels.googlechat";
-import { renderIMessageCard } from "./channels.imessage";
 import { renderNostrCard } from "./channels.nostr";
 import { channelEnabled, renderChannelAccountCount } from "./channels.shared";
 import { renderSignalCard } from "./channels.signal";
@@ -34,7 +32,6 @@ export function renderChannels(props: ChannelsProps) {
   const googlechat = (channels?.googlechat ?? null) as GoogleChatStatus | null;
   const slack = (channels?.slack ?? null) as SlackStatus | null;
   const signal = (channels?.signal ?? null) as SignalStatus | null;
-  const imessage = (channels?.imessage ?? null) as IMessageStatus | null;
   const nostr = (channels?.nostr ?? null) as NostrStatus | null;
   const channelOrder = resolveChannelOrder(props.snapshot);
   const orderedChannels = channelOrder
@@ -58,7 +55,6 @@ export function renderChannels(props: ChannelsProps) {
           googlechat,
           slack,
           signal,
-          imessage,
           nostr,
           channelAccounts: props.snapshot?.channelAccounts ?? null,
         }),
@@ -94,7 +90,7 @@ function resolveChannelOrder(snapshot: ChannelsStatusSnapshot | null): ChannelKe
   if (snapshot?.channelOrder?.length) {
     return snapshot.channelOrder;
   }
-  return ["whatsapp", "telegram", "discord", "googlechat", "slack", "signal", "imessage", "nostr"];
+  return ["whatsapp", "telegram", "discord", "googlechat", "slack", "signal", "nostr"];
 }
 
 function renderChannel(key: ChannelKey, props: ChannelsProps, data: ChannelsChannelData) {
@@ -135,12 +131,6 @@ function renderChannel(key: ChannelKey, props: ChannelsProps, data: ChannelsChan
       return renderSignalCard({
         props,
         signal: data.signal,
-        accountCountLabel,
-      });
-    case "imessage":
-      return renderIMessageCard({
-        props,
-        imessage: data.imessage,
         accountCountLabel,
       });
     case "nostr": {

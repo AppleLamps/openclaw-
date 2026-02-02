@@ -11,7 +11,6 @@ export const CHAT_CHANNEL_ORDER = [
   "googlechat",
   "slack",
   "signal",
-  "imessage",
 ] as const;
 
 export type ChatChannelId = (typeof CHAT_CHANNEL_ORDER)[number];
@@ -88,20 +87,9 @@ const CHAT_CHANNEL_META: Record<ChatChannelId, ChannelMeta> = {
     blurb: 'signal-cli linked device; more setup (David Reagans: "Hop on Discord.").',
     systemImage: "antenna.radiowaves.left.and.right",
   },
-  imessage: {
-    id: "imessage",
-    label: "iMessage",
-    selectionLabel: "iMessage (imsg)",
-    detailLabel: "iMessage",
-    docsPath: "/channels/imessage",
-    docsLabel: "imessage",
-    blurb: "this is still a work in progress.",
-    systemImage: "message.fill",
-  },
 };
 
 export const CHAT_CHANNEL_ALIASES: Record<string, ChatChannelId> = {
-  imsg: "imessage",
   "google-chat": "googlechat",
   gchat: "googlechat",
 };

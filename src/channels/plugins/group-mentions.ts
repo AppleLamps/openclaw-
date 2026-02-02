@@ -149,15 +149,6 @@ export function resolveWhatsAppGroupRequireMention(params: GroupMentionParams): 
   });
 }
 
-export function resolveIMessageGroupRequireMention(params: GroupMentionParams): boolean {
-  return resolveChannelGroupRequireMention({
-    cfg: params.cfg,
-    channel: "imessage",
-    groupId: params.groupId,
-    accountId: params.accountId,
-  });
-}
-
 export function resolveDiscordGroupRequireMention(params: GroupMentionParams): boolean {
   const guildEntry = resolveDiscordGuildEntry(
     params.cfg.channels?.discord?.guilds,
@@ -273,21 +264,6 @@ export function resolveWhatsAppGroupToolPolicy(
   return resolveChannelGroupToolsPolicy({
     cfg: params.cfg,
     channel: "whatsapp",
-    groupId: params.groupId,
-    accountId: params.accountId,
-    senderId: params.senderId,
-    senderName: params.senderName,
-    senderUsername: params.senderUsername,
-    senderE164: params.senderE164,
-  });
-}
-
-export function resolveIMessageGroupToolPolicy(
-  params: GroupMentionParams,
-): GroupToolPolicyConfig | undefined {
-  return resolveChannelGroupToolsPolicy({
-    cfg: params.cfg,
-    channel: "imessage",
     groupId: params.groupId,
     accountId: params.accountId,
     senderId: params.senderId,

@@ -6,11 +6,10 @@ import {
 } from "../../commands/node-daemon-runtime.js";
 import { resolveIsNixMode } from "../../config/paths.js";
 import {
-  resolveNodeLaunchAgentLabel,
   resolveNodeSystemdServiceName,
   resolveNodeWindowsTaskName,
 } from "../../daemon/constants.js";
-import { resolveGatewayLogPaths } from "../../daemon/launchd.js";
+import { resolveGatewayLogPaths } from "../../daemon/paths.js";
 import { resolveNodeService } from "../../daemon/node-service.js";
 import { renderSystemdUnavailableHints } from "../../daemon/systemd-hints.js";
 import { isSystemdUserServiceAvailable } from "../../daemon/systemd.js";
@@ -49,11 +48,6 @@ type NodeDaemonStatusOptions = {
 function renderNodeServiceStartHints(): string[] {
   const base = [formatCliCommand("openclaw node install"), formatCliCommand("openclaw node start")];
   switch (process.platform) {
-    case "darwin":
-      return [
-        ...base,
-        `launchctl bootstrap gui/$UID ~/Library/LaunchAgents/${resolveNodeLaunchAgentLabel()}.plist`,
-      ];
     case "linux":
       return [...base, `systemctl --user start ${resolveNodeSystemdServiceName()}.service`];
     case "win32":
@@ -63,14 +57,7 @@ function renderNodeServiceStartHints(): string[] {
   }
 }
 
-function buildNodeRuntimeHints(env: NodeJS.ProcessEnv = process.env): string[] {
-  if (process.platform === "darwin") {
-    const logs = resolveGatewayLogPaths(env);
-    return [
-      `Launchd stdout (if installed): ${logs.stdoutPath}`,
-      `Launchd stderr (if installed): ${logs.stderrPath}`,
-    ];
-  }
+function buildNodeRuntimeHints(_env: NodeJS.ProcessEnv = process.env): string[] {
   if (process.platform === "linux") {
     const unit = resolveNodeSystemdServiceName();
     return [`Logs: journalctl --user -u ${unit}.service -n 200 --no-pager`];

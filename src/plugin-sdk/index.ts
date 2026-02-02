@@ -97,7 +97,6 @@ export type {
 export {
   DiscordConfigSchema,
   GoogleChatConfigSchema,
-  IMessageConfigSchema,
   MSTeamsConfigSchema,
   SignalConfigSchema,
   SlackConfigSchema,
@@ -158,14 +157,12 @@ export {
   resolveBlueBubblesGroupRequireMention,
   resolveDiscordGroupRequireMention,
   resolveGoogleChatGroupRequireMention,
-  resolveIMessageGroupRequireMention,
   resolveSlackGroupRequireMention,
   resolveTelegramGroupRequireMention,
   resolveWhatsAppGroupRequireMention,
   resolveBlueBubblesGroupToolPolicy,
   resolveDiscordGroupToolPolicy,
   resolveGoogleChatGroupToolPolicy,
-  resolveIMessageGroupToolPolicy,
   resolveSlackGroupToolPolicy,
   resolveTelegramGroupToolPolicy,
   resolveWhatsAppGroupToolPolicy,
@@ -263,19 +260,6 @@ export {
   normalizeDiscordMessagingTarget,
 } from "../channels/plugins/normalize/discord.js";
 export { collectDiscordStatusIssues } from "../channels/plugins/status-issues/discord.js";
-
-// Channel: iMessage
-export {
-  listIMessageAccountIds,
-  resolveDefaultIMessageAccountId,
-  resolveIMessageAccount,
-  type ResolvedIMessageAccount,
-} from "../imessage/accounts.js";
-export { imessageOnboardingAdapter } from "../channels/plugins/onboarding/imessage.js";
-export {
-  looksLikeIMessageTargetId,
-  normalizeIMessageMessagingTarget,
-} from "../channels/plugins/normalize/imessage.js";
 
 // Channel: Slack
 export {

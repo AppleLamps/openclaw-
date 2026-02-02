@@ -2,7 +2,6 @@ import type { ReplyPayload } from "../../auto-reply/types.js";
 import type { ChannelOutboundAdapter } from "../../channels/plugins/types.js";
 import type { OpenClawConfig } from "../../config/config.js";
 import type { sendMessageDiscord } from "../../discord/send.js";
-import type { sendMessageIMessage } from "../../imessage/send.js";
 import type { sendMessageSlack } from "../../slack/send.js";
 import type { sendMessageTelegram } from "../../telegram/send.js";
 import type { sendMessageWhatsApp } from "../../web/outbound.js";
@@ -40,7 +39,6 @@ export type OutboundSendDeps = {
   sendDiscord?: typeof sendMessageDiscord;
   sendSlack?: typeof sendMessageSlack;
   sendSignal?: typeof sendMessageSignal;
-  sendIMessage?: typeof sendMessageIMessage;
   sendMatrix?: SendMatrixMessage;
   sendMSTeams?: (
     to: string,

@@ -1,10 +1,7 @@
 import { resolveControlUiLinks } from "../../commands/onboard-helpers.js";
-import {
-  resolveGatewayLaunchAgentLabel,
-  resolveGatewaySystemdServiceName,
-} from "../../daemon/constants.js";
+import { resolveGatewaySystemdServiceName } from "../../daemon/constants.js";
 import { renderGatewayServiceCleanupHints } from "../../daemon/inspect.js";
-import { resolveGatewayLogPaths } from "../../daemon/launchd.js";
+import { resolveGatewayLogPaths } from "../../daemon/paths.js";
 import {
   isSystemdUnavailableDetail,
   renderSystemdUnavailableHints,
@@ -229,20 +226,6 @@ export function printDaemonStatus(status: DaemonStatus, opts: { json: boolean })
     )) {
       defaultRuntime.error(errorText(hint));
     }
-    spacer();
-  }
-
-  if (service.runtime?.cachedLabel) {
-    const env = (service.command?.environment ?? process.env) as NodeJS.ProcessEnv;
-    const labelValue = resolveGatewayLaunchAgentLabel(env.OPENCLAW_PROFILE);
-    defaultRuntime.error(
-      errorText(
-        `LaunchAgent label cached but plist missing. Clear with: launchctl bootout gui/$UID/${labelValue}`,
-      ),
-    );
-    defaultRuntime.error(
-      errorText(`Then reinstall: ${formatCliCommand("openclaw gateway install")}`),
-    );
     spacer();
   }
 

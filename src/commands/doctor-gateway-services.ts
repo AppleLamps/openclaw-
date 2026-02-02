@@ -1,8 +1,4 @@
-import { execFile } from "node:child_process";
-import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
-import { promisify } from "node:util";
 import type { OpenClawConfig } from "../config/config.js";
 import type { RuntimeEnv } from "../runtime.js";
 import type { DoctorOptions, DoctorPrompter } from "./doctor-prompter.js";
@@ -18,8 +14,6 @@ import { resolveGatewayService } from "../daemon/service.js";
 import { note } from "../terminal/note.js";
 import { buildGatewayInstallPlan } from "./daemon-install-helpers.js";
 import { DEFAULT_GATEWAY_DAEMON_RUNTIME, type GatewayDaemonRuntime } from "./daemon-runtime.js";
-
-const execFileAsync = promisify(execFile);
 
 function detectGatewayRuntime(programArguments: string[] | undefined): GatewayDaemonRuntime {
   const first = programArguments?.[0];
@@ -48,44 +42,6 @@ function findGatewayEntrypoint(programArguments?: string[]): string | null {
 
 function normalizeExecutablePath(value: string): string {
   return path.resolve(value);
-}
-
-function extractDetailPath(detail: string, prefix: string): string | null {
-  if (!detail.startsWith(prefix)) {
-    return null;
-  }
-  const value = detail.slice(prefix.length).trim();
-  return value.length > 0 ? value : null;
-}
-
-async function cleanupLegacyLaunchdService(params: {
-  label: string;
-  plistPath: string;
-}): Promise<string | null> {
-  const domain = typeof process.getuid === "function" ? `gui/${process.getuid()}` : "gui/501";
-  await execFileAsync("launchctl", ["bootout", domain, params.plistPath]).catch(() => undefined);
-  await execFileAsync("launchctl", ["unload", params.plistPath]).catch(() => undefined);
-
-  const trashDir = path.join(os.homedir(), ".Trash");
-  try {
-    await fs.mkdir(trashDir, { recursive: true });
-  } catch {
-    // ignore
-  }
-
-  try {
-    await fs.access(params.plistPath);
-  } catch {
-    return null;
-  }
-
-  const dest = path.join(trashDir, `${params.label}-${Date.now()}.plist`);
-  try {
-    await fs.rename(params.plistPath, dest);
-    return dest;
-  } catch {
-    return null;
-  }
 }
 
 export async function maybeRepairGatewayServiceConfig(
@@ -228,43 +184,10 @@ export async function maybeScanExtraGatewayServices(
 
   const legacyServices = extraServices.filter((svc) => svc.legacy === true);
   if (legacyServices.length > 0) {
-    const shouldRemove = await prompter.confirmSkipInNonInteractive({
-      message: "Remove legacy gateway services (clawdbot/moltbot) now?",
-      initialValue: true,
-    });
-    if (shouldRemove) {
-      const removed: string[] = [];
-      const failed: string[] = [];
-      for (const svc of legacyServices) {
-        if (svc.platform !== "darwin") {
-          failed.push(`${svc.label} (${svc.platform})`);
-          continue;
-        }
-        if (svc.scope !== "user") {
-          failed.push(`${svc.label} (${svc.scope})`);
-          continue;
-        }
-        const plistPath = extractDetailPath(svc.detail, "plist:");
-        if (!plistPath) {
-          failed.push(`${svc.label} (missing plist path)`);
-          continue;
-        }
-        const dest = await cleanupLegacyLaunchdService({
-          label: svc.label,
-          plistPath,
-        });
-        removed.push(dest ? `${svc.label} -> ${dest}` : svc.label);
-      }
-      if (removed.length > 0) {
-        note(removed.map((line) => `- ${line}`).join("\n"), "Legacy gateway removed");
-      }
-      if (failed.length > 0) {
-        note(failed.map((line) => `- ${line}`).join("\n"), "Legacy gateway cleanup skipped");
-      }
-      if (removed.length > 0) {
-        runtime.log("Legacy gateway services removed. Installing OpenClaw gateway next.");
-      }
-    }
+    note(
+      legacyServices.map((svc) => `- ${svc.label} (${svc.platform})`).join("\n"),
+      "Legacy gateway services detected - manual cleanup may be needed",
+    );
   }
 
   const cleanupHints = renderGatewayServiceCleanupHints();

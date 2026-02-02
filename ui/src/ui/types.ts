@@ -210,23 +210,6 @@ export type SignalStatus = {
   lastProbeAt?: number | null;
 };
 
-export type IMessageProbe = {
-  ok: boolean;
-  error?: string | null;
-};
-
-export type IMessageStatus = {
-  configured: boolean;
-  running: boolean;
-  lastStartAt?: number | null;
-  lastStopAt?: number | null;
-  lastError?: string | null;
-  cliPath?: string | null;
-  dbPath?: string | null;
-  probe?: IMessageProbe | null;
-  lastProbeAt?: number | null;
-};
-
 export type NostrProfile = {
   name?: string | null;
   displayName?: string | null;

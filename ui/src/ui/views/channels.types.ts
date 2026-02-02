@@ -4,7 +4,6 @@ import type {
   ConfigUiHints,
   DiscordStatus,
   GoogleChatStatus,
-  IMessageStatus,
   NostrProfile,
   NostrStatus,
   SignalStatus,
@@ -56,7 +55,6 @@ export type ChannelsChannelData = {
   googlechat?: GoogleChatStatus | null;
   slack?: SlackStatus | null;
   signal?: SignalStatus | null;
-  imessage?: IMessageStatus | null;
   nostr?: NostrStatus | null;
   channelAccounts?: Record<string, ChannelAccountSnapshot[]> | null;
 };

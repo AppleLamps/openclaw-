@@ -40,3 +40,18 @@ export function resolveGatewayStateDir(env: Record<string, string | undefined>):
   const suffix = resolveGatewayProfileSuffix(env.OPENCLAW_PROFILE);
   return path.join(home, `.openclaw${suffix}`);
 }
+
+export function resolveGatewayLogPaths(env: Record<string, string | undefined>): {
+  logDir: string;
+  stdoutPath: string;
+  stderrPath: string;
+} {
+  const stateDir = resolveGatewayStateDir(env);
+  const logDir = path.join(stateDir, "logs");
+  const prefix = env.OPENCLAW_LOG_PREFIX?.trim() || "gateway";
+  return {
+    logDir,
+    stdoutPath: path.join(logDir, `${prefix}.log`),
+    stderrPath: path.join(logDir, `${prefix}.err.log`),
+  };
+}

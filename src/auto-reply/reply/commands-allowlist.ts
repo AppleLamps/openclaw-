@@ -13,7 +13,6 @@ import {
 import { resolveDiscordAccount } from "../../discord/accounts.js";
 import { resolveDiscordUserAllowlist } from "../../discord/resolve-users.js";
 import { logVerbose } from "../../globals.js";
-import { resolveIMessageAccount } from "../../imessage/accounts.js";
 import {
   addChannelAllowFromStoreEntry,
   readChannelAllowFromStore,
@@ -256,23 +255,13 @@ function resolveChannelAllowFromPaths(
     if (channelId === "slack" || channelId === "discord") {
       return ["dm", "allowFrom"];
     }
-    if (
-      channelId === "telegram" ||
-      channelId === "whatsapp" ||
-      channelId === "signal" ||
-      channelId === "imessage"
-    ) {
+    if (channelId === "telegram" || channelId === "whatsapp" || channelId === "signal") {
       return ["allowFrom"];
     }
     return null;
   }
   if (scope === "group") {
-    if (
-      channelId === "telegram" ||
-      channelId === "whatsapp" ||
-      channelId === "signal" ||
-      channelId === "imessage"
-    ) {
+    if (channelId === "telegram" || channelId === "whatsapp" || channelId === "signal") {
       return ["groupAllowFrom"];
     }
     return null;
@@ -392,12 +381,6 @@ export const handleAllowlistCommand: CommandHandler = async (params, allowTextCo
       groupPolicy = account.groupPolicy;
     } else if (channelId === "signal") {
       const account = resolveSignalAccount({ cfg: params.cfg, accountId });
-      dmAllowFrom = (account.config.allowFrom ?? []).map(String);
-      groupAllowFrom = (account.config.groupAllowFrom ?? []).map(String);
-      dmPolicy = account.config.dmPolicy;
-      groupPolicy = account.config.groupPolicy;
-    } else if (channelId === "imessage") {
-      const account = resolveIMessageAccount({ cfg: params.cfg, accountId });
       dmAllowFrom = (account.config.allowFrom ?? []).map(String);
       groupAllowFrom = (account.config.groupAllowFrom ?? []).map(String);
       dmPolicy = account.config.dmPolicy;
