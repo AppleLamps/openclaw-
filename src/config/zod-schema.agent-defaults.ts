@@ -61,6 +61,15 @@ export const AgentDefaultsSchema = z
         softTrimRatio: z.number().min(0).max(1).optional(),
         hardClearRatio: z.number().min(0).max(1).optional(),
         minPrunableToolChars: z.number().int().nonnegative().optional(),
+        toolResults: z
+          .object({
+            maxChars: z.number().int().nonnegative().optional(),
+            headChars: z.number().int().nonnegative().optional(),
+            tailChars: z.number().int().nonnegative().optional(),
+            placeholder: z.string().optional(),
+          })
+          .strict()
+          .optional(),
         tools: z
           .object({
             allow: z.array(z.string()).optional(),

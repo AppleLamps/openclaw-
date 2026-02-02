@@ -29,6 +29,10 @@ export const DEFAULT_SKILLS_WATCH_IGNORED: RegExp[] = [
   /(^|[\\/])\.git([\\/]|$)/,
   /(^|[\\/])node_modules([\\/]|$)/,
   /(^|[\\/])dist([\\/]|$)/,
+  /(^|[\\/])\.venv([\\/]|$)/,
+  /(^|[\\/])venv([\\/]|$)/,
+  /(^|[\\/])\.tox([\\/]|$)/,
+  /(^|[\\/])__pycache__([\\/]|$)/,
 ];
 
 function bumpVersion(current: number): number {
@@ -116,7 +120,7 @@ export function ensureSkillsWatcher(params: { workspaceDir: string; config?: Ope
       if (existing.timer) {
         clearTimeout(existing.timer);
       }
-      void existing.watcher.close().catch(() => {});
+      void existing.watcher.close().catch(() => { });
     }
     return;
   }
@@ -131,8 +135,14 @@ export function ensureSkillsWatcher(params: { workspaceDir: string; config?: Ope
     if (existing.timer) {
       clearTimeout(existing.timer);
     }
-    void existing.watcher.close().catch(() => {});
+    void existing.watcher.close().catch(() => { });
   }
+
+  const extraIgnored = (params.config?.skills?.load?.watchIgnored ?? [])
+    .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
+    .filter(Boolean);
+  const ignored =
+    extraIgnored.length > 0 ? [...DEFAULT_SKILLS_WATCH_IGNORED, ...extraIgnored] : undefined;
 
   const watcher = chokidar.watch(watchPaths, {
     ignoreInitial: true,
@@ -142,7 +152,7 @@ export function ensureSkillsWatcher(params: { workspaceDir: string; config?: Ope
     },
     // Avoid FD exhaustion on macOS when a workspace contains huge trees.
     // This watcher only needs to react to skill changes.
-    ignored: DEFAULT_SKILLS_WATCH_IGNORED,
+    ignored: ignored ?? DEFAULT_SKILLS_WATCH_IGNORED,
   });
 
   const state: SkillsWatchState = { watcher, pathsKey, debounceMs };

@@ -112,6 +112,37 @@ describe("sanitizeSessionHistory", () => {
     );
   });
 
+  it("truncates tool result content when configured", async () => {
+    const longText = "x".repeat(200);
+    const messages: AgentMessage[] = [
+      {
+        role: "toolResult",
+        content: [{ type: "text", text: longText }],
+      } as AgentMessage,
+    ];
+
+    const result = await sanitizeSessionHistory({
+      messages,
+      modelApi: "openai-responses",
+      provider: "openai",
+      sessionManager: mockSessionManager,
+      sessionId: "test-session",
+      config: {
+        agents: {
+          defaults: {
+            contextPruning: {
+              toolResults: { maxChars: 60 },
+            },
+          },
+        },
+      },
+    });
+
+    const toolResult = result[0] as { content?: Array<{ text?: string }> };
+    const text = toolResult.content?.[0]?.text ?? "";
+    expect(text.length).toBeLessThanOrEqual(60);
+  });
+
   it("keeps reasoning-only assistant messages for openai-responses", async () => {
     vi.mocked(helpers.isGoogleModelApi).mockReturnValue(false);
 

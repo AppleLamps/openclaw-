@@ -64,6 +64,44 @@ describe("tool_result_persist hook", () => {
     expect(toolResult.details).toBeTruthy();
   });
 
+  it("truncates toolResult content when configured", () => {
+    const sm = guardSessionManager(SessionManager.inMemory(), {
+      agentId: "main",
+      sessionKey: "main",
+      config: {
+        agents: {
+          defaults: {
+            contextPruning: {
+              toolResults: { maxChars: 40 },
+            },
+          },
+        },
+      },
+    });
+
+    sm.appendMessage({
+      role: "assistant",
+      content: [{ type: "toolCall", id: "call_2", name: "read", arguments: {} }],
+    } as AgentMessage);
+
+    sm.appendMessage({
+      role: "toolResult",
+      toolCallId: "call_2",
+      isError: false,
+      content: [{ type: "text", text: "x".repeat(200) }],
+    } as any);
+
+    const messages = sm
+      .getEntries()
+      .filter((e) => e.type === "message")
+      .map((e) => (e as { message: AgentMessage }).message);
+
+    const toolResult = messages.find((m) => (m as any).role === "toolResult") as any;
+    expect(toolResult).toBeTruthy();
+    const text = toolResult.content?.[0]?.text ?? "";
+    expect(text.length).toBeLessThanOrEqual(40);
+  });
+
   it("composes transforms in priority order and allows stripping toolResult.details", () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-toolpersist-"));
     process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";

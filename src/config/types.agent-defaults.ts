@@ -31,6 +31,17 @@ export type AgentContextPruningConfig = {
   softTrimRatio?: number;
   hardClearRatio?: number;
   minPrunableToolChars?: number;
+  /** Optional truncation for persisted tool results and history. */
+  toolResults?: {
+    /** Max chars to keep from tool results (0 disables truncation). */
+    maxChars?: number;
+    /** Optional head chars to preserve when truncating. */
+    headChars?: number;
+    /** Optional tail chars to preserve when truncating. */
+    tailChars?: number;
+    /** Placeholder inserted between head/tail (ASCII recommended). */
+    placeholder?: string;
+  };
   tools?: {
     allow?: string[];
     deny?: string[];

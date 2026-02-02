@@ -1,6 +1,11 @@
 import type { SessionManager } from "@mariozechner/pi-coding-agent";
 import { getGlobalHookRunner } from "../plugins/hook-runner-global.js";
+import type { OpenClawConfig } from "../config/config.js";
 import { installSessionToolResultGuard } from "./session-tool-result-guard.js";
+import {
+  resolveToolResultTruncationConfig,
+  truncateToolResultMessage,
+} from "./tool-result-truncate.js";
 
 export type GuardedSessionManager = SessionManager & {
   /** Flush any synthetic tool results for pending tool calls. Idempotent. */
@@ -17,6 +22,7 @@ export function guardSessionManager(
     agentId?: string;
     sessionKey?: string;
     allowSyntheticToolResults?: boolean;
+    config?: OpenClawConfig;
   },
 ): GuardedSessionManager {
   if (typeof (sessionManager as GuardedSessionManager).flushPendingToolResults === "function") {
@@ -24,25 +30,34 @@ export function guardSessionManager(
   }
 
   const hookRunner = getGlobalHookRunner();
-  const transform = hookRunner?.hasHooks("tool_result_persist")
+  const baseTransform = hookRunner?.hasHooks("tool_result_persist")
     ? (message: any, meta: { toolCallId?: string; toolName?: string; isSynthetic?: boolean }) => {
-        const out = hookRunner.runToolResultPersist(
-          {
-            toolName: meta.toolName,
-            toolCallId: meta.toolCallId,
-            message,
-            isSynthetic: meta.isSynthetic,
-          },
-          {
-            agentId: opts?.agentId,
-            sessionKey: opts?.sessionKey,
-            toolName: meta.toolName,
-            toolCallId: meta.toolCallId,
-          },
-        );
-        return out?.message ?? message;
-      }
+      const out = hookRunner.runToolResultPersist(
+        {
+          toolName: meta.toolName,
+          toolCallId: meta.toolCallId,
+          message,
+          isSynthetic: meta.isSynthetic,
+        },
+        {
+          agentId: opts?.agentId,
+          sessionKey: opts?.sessionKey,
+          toolName: meta.toolName,
+          toolCallId: meta.toolCallId,
+        },
+      );
+      return out?.message ?? message;
+    }
     : undefined;
+
+  const truncation = resolveToolResultTruncationConfig(opts?.config);
+  const transform =
+    baseTransform || truncation
+      ? (message: any, meta: { toolCallId?: string; toolName?: string; isSynthetic?: boolean }) => {
+        const hooked = baseTransform ? baseTransform(message, meta) : message;
+        return truncateToolResultMessage(hooked, truncation);
+      }
+      : undefined;
 
   const guard = installSessionToolResultGuard(sessionManager, {
     transformToolResultForPersistence: transform,

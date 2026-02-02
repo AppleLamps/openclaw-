@@ -13,6 +13,8 @@ export type SkillsLoadConfig = {
   extraDirs?: string[];
   /** Watch skill folders for changes and refresh the skills snapshot. */
   watch?: boolean;
+  /** Additional chokidar ignore globs for skills watcher. */
+  watchIgnored?: string[];
   /** Debounce for the skills watcher (ms). */
   watchDebounceMs?: number;
 };

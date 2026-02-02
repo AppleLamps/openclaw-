@@ -623,6 +623,34 @@ export async function runEmbeddedPiAgent(
             }
           }
 
+          // Handle unrecoverable format errors - return explicit error instead of silent failure
+          if (cloudCodeAssistFormatError && !fallbackConfigured) {
+            const errorMessage =
+              lastAssistant?.errorMessage?.trim() ||
+              "Tool call ID format incompatible with provider.";
+            return {
+              payloads: [
+                {
+                  type: "assistant" as const,
+                  text: `Session format error: ${errorMessage}\n\nPlease start a new session with /new.`,
+                  isError: true,
+                },
+              ],
+              meta: {
+                durationMs: Date.now() - started,
+                agentMeta: {
+                  sessionId: sessionIdUsed,
+                  provider: lastAssistant?.provider ?? provider,
+                  model: lastAssistant?.model ?? model.id,
+                },
+                error: {
+                  kind: "format_error" as const,
+                  message: errorMessage,
+                },
+              },
+            };
+          }
+
           const usage = normalizeUsage(lastAssistant?.usage as UsageLike);
           const agentMeta: EmbeddedPiAgentMeta = {
             sessionId: sessionIdUsed,

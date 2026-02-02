@@ -453,6 +453,7 @@ export const OpenClawSchema = z
           .object({
             extraDirs: z.array(z.string()).optional(),
             watch: z.boolean().optional(),
+            watchIgnored: z.array(z.string()).optional(),
             watchDebounceMs: z.number().int().min(0).optional(),
           })
           .strict()

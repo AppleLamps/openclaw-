@@ -1,5 +1,4 @@
 import crypto from "node:crypto";
-import path from "node:path";
 import { resolveQueueSettings } from "../auto-reply/reply/queue.js";
 import { loadConfig } from "../config/config.js";
 import {
@@ -236,13 +235,9 @@ async function buildSubagentStatsLine(params: {
   endedAt?: number;
 }) {
   const cfg = loadConfig();
-  const { entry, storePath } = await waitForSessionUsage({
+  const { entry } = await waitForSessionUsage({
     sessionKey: params.sessionKey,
   });
-
-  const sessionId = entry?.sessionId;
-  const transcriptPath =
-    sessionId && storePath ? path.join(path.dirname(storePath), `${sessionId}.jsonl`) : undefined;
 
   const input = entry?.inputTokens;
   const output = entry?.outputTokens;
@@ -277,13 +272,9 @@ async function buildSubagentStatsLine(params: {
   if (costText) {
     parts.push(`est ${costText}`);
   }
-  parts.push(`sessionKey ${params.sessionKey}`);
-  if (sessionId) {
-    parts.push(`sessionId ${sessionId}`);
-  }
-  if (transcriptPath) {
-    parts.push(`transcript ${transcriptPath}`);
-  }
+  // NOTE: sessionKey, sessionId, and transcriptPath are intentionally NOT included
+  // in the stats line to prevent leaking internal implementation details to users.
+  // See: https://github.com/anthropics/claude-code/issues/XXXX
 
   return `Stats: ${parts.join(" \u2022 ")}`;
 }

@@ -3,6 +3,7 @@ import type { SessionManager } from "@mariozechner/pi-coding-agent";
 import type { TSchema } from "@sinclair/typebox";
 import { EventEmitter } from "node:events";
 import type { TranscriptPolicy } from "../transcript-policy.js";
+import type { OpenClawConfig } from "../../config/config.js";
 import { registerUnhandledRejectionHandler } from "../../infra/unhandled-rejections.js";
 import {
   downgradeOpenAIReasoningBlocks,
@@ -14,6 +15,10 @@ import {
 import { cleanToolSchemaForGemini } from "../pi-tools.schema.js";
 import { sanitizeToolUseResultPairing } from "../session-transcript-repair.js";
 import { resolveTranscriptPolicy } from "../transcript-policy.js";
+import {
+  resolveToolResultTruncationConfig,
+  truncateToolResultMessages,
+} from "../tool-result-truncate.js";
 import { log } from "./logger.js";
 import { describeUnknownError } from "./utils.js";
 
@@ -324,6 +329,7 @@ export async function sanitizeSessionHistory(params: {
   modelApi?: string | null;
   modelId?: string;
   provider?: string;
+  config?: OpenClawConfig;
   sessionManager: SessionManager;
   sessionId: string;
   policy?: TranscriptPolicy;
@@ -356,16 +362,20 @@ export async function sanitizeSessionHistory(params: {
   const priorSnapshot = hasSnapshot ? readLastModelSnapshot(params.sessionManager) : null;
   const modelChanged = priorSnapshot
     ? !isSameModelSnapshot(priorSnapshot, {
-        timestamp: 0,
-        provider: params.provider,
-        modelApi: params.modelApi,
-        modelId: params.modelId,
-      })
+      timestamp: 0,
+      provider: params.provider,
+      modelApi: params.modelApi,
+      modelId: params.modelId,
+    })
     : false;
   const sanitizedOpenAI =
     isOpenAIResponsesApi && modelChanged
       ? downgradeOpenAIReasoningBlocks(repairedTools)
       : repairedTools;
+  const truncated = truncateToolResultMessages(
+    sanitizedOpenAI,
+    resolveToolResultTruncationConfig(params.config),
+  );
 
   if (hasSnapshot && (!priorSnapshot || modelChanged)) {
     appendModelSnapshot(params.sessionManager, {
@@ -377,11 +387,11 @@ export async function sanitizeSessionHistory(params: {
   }
 
   if (!policy.applyGoogleTurnOrdering) {
-    return sanitizedOpenAI;
+    return truncated;
   }
 
   return applyGoogleTurnOrderingFix({
-    messages: sanitizedOpenAI,
+    messages: truncated,
     modelApi: params.modelApi,
     sessionManager: params.sessionManager,
     sessionId: params.sessionId,
